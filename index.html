@@ -2,834 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Summery Vibe — iPad Album Gallery & Player</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light only" />
-  <meta name="theme-color" content="#ff7a59" />
-  <!-- iPad/iOS web-app niceties -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <style>
-    :root {
-      --coral: #ff7a59;
-      --orange: #ffb347;
-      --turquoise: #1fd1c9;
-      --sand: #ffecc7;
-      --ink: #18212f;
-      --muted: #6b7a90;
-      --bg: #fffdf8;
-      --card: #ffffff;
-      --ring: #1fd1c966;
-      --shadow: 0 10px 25px rgba(24, 33, 47, .12), 0 2px 8px rgba(24, 33, 47, .06);
-
-      --radius: 16px;
-      --radius-sm: 10px;
-      --radius-lg: 22px;
-      --trans: 220ms cubic-bezier(.2,.8,.2,1);
-      --trans-fast: 160ms cubic-bezier(.2,.8,.2,1);
-
-      --player-h: 92px;
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-top: env(safe-area-inset-top, 0px);
-    }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
-      color: var(--ink);
-      background: var(--bg);
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-    }
-
-    a { color: inherit; text-decoration: none; }
-    button { font: inherit; }
-    img { max-width: 100%; display: block; }
-
-    /* Non‑iPad blocker */
-    .blocker {
-      position: fixed; inset: 0;
-      background: linear-gradient(120deg, var(--coral), var(--orange), var(--turquoise));
-      background-size: 180% 180%;
-      animation: gradientShift 12s ease-in-out infinite;
-      color: #0a1a1f;
-      display: none; place-items: center; padding: 24px;
-      z-index: 9999;
-    }
-    .blocker[aria-hidden="false"] { display: grid; }
-    .blocker .box {
-      max-width: 680px; width: 100%;
-      background: rgba(255,255,255,.3);
-      backdrop-filter: blur(10px) saturate(120%);
-      border: 1px solid rgba(255,255,255,.45);
-      padding: 28px; border-radius: 18px; text-align: center;
-      box-shadow: 0 20px 50px rgba(0,0,0,.12);
-    }
-
-    /* Skip link */
-    .skip-link { position: absolute; left: -9999px; top: -9999px; }
-    .skip-link:focus {
-      left: 16px; top: 16px;
-      background: #fff; color: var(--ink);
-      padding: 10px 14px; border-radius: 10px; box-shadow: var(--shadow);
-      outline: 2px solid var(--ring);
-      z-index: 10000;
-    }
-
-    /* HERO */
-    .hero {
-      position: fixed; inset: 0; display: grid; place-items: center;
-      padding: 24px;
-      background: linear-gradient(120deg, var(--coral), var(--orange), var(--turquoise));
-      background-size: 180% 180%;
-      animation: gradientShift 12s ease-in-out infinite;
-      color: #0a1a1f;
-      z-index: 50;
-      padding-top: calc(24px + var(--safe-top));
-    }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    .hero-inner {
-      width: min(980px, 92%); text-align: center;
-      background: rgba(255,255,255,.28);
-      backdrop-filter: blur(10px) saturate(120%);
-      border: 1px solid rgba(255,255,255,.4);
-      border-radius: var(--radius-lg);
-      padding: clamp(24px, 5vw, 48px);
-      box-shadow: 0 20px 50px rgba(0,0,0,.12);
-    }
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(28px, 5vw, 56px);
-      line-height: 1.05;
-      letter-spacing: -.02em;
-    }
-    .hero p {
-      margin: 0 0 28px;
-      font-size: clamp(16px, 2.4vw, 20px);
-      color: #0a1a1fb3;
-    }
-    .hero .play-cta {
-      display: inline-flex; align-items: center; gap: 12px;
-      background: #0a1a1f; color: #fff;
-      padding: 16px 24px; border-radius: 999px; border: 0; font-weight: 700;
-      box-shadow: 0 8px 20px rgba(10, 26, 31, .22), inset 0 -3px 0 rgba(255,255,255,.09);
-      transition: transform var(--trans-fast), box-shadow var(--trans-fast);
-      cursor: pointer;
-    }
-    .hero .play-cta:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
-    .hero .play-cta:active { transform: translateY(1px); }
-
-    .hero.hidden { opacity: 0; pointer-events: none; transition: opacity var(--trans); }
-    @media (prefers-reduced-motion: reduce) { .hero, .hero.hidden { animation: none; transition: none; } }
-
-    /* HEADER */
-    header.site {
-      position: sticky; top: 0; z-index: 10;
-      backdrop-filter: blur(8px) saturate(120%);
-      background: color-mix(in oklab, white 75%, transparent);
-      border-bottom: 1px solid #0000000f;
-      padding-top: var(--safe-top);
-    }
-    header.site .wrap {
-      display: flex; align-items: center; gap: 16px;
-      padding: 14px 18px; max-width: 1200px; margin: 0 auto;
-    }
-    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2px; }
-    .brand-badge { width: 28px; height: 28px; border-radius: 8px; background: conic-gradient(from 200deg, var(--coral), var(--orange), var(--turquoise), var(--coral)); box-shadow: 0 2px 6px rgba(0,0,0,.15) inset; }
-    .tagline { color: var(--muted); font-size: 14px; margin-left: auto; }
-
-    main {
-      padding: 22px 18px calc(var(--player-h) + var(--safe-bottom) + 24px);
-      max-width: min(1200px, 92vw); margin: 0 auto;
-    }
-
-    /* GALLERY (iPad‑friendly grid) */
-    .grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-    @media (orientation: landscape) {
-      .grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-    }
-
-    .card {
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: var(--shadow); overflow: hidden;
-      display: grid; grid-template-rows: 1fr auto; min-height: 320px;
-      transition: transform var(--trans-fast), box-shadow var(--trans-fast);
-      touch-action: manipulation;
-    }
-    @media (hover: hover) {
-      .card:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(24,33,47,.16), 0 3px 10px rgba(24,33,47,.08); }
-    }
-    .cover { position: relative; overflow: hidden; }
-    .cover::after {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(120% 90% at 20% 10%, #ffffff66, transparent 50%),
-                  linear-gradient(135deg, #00000012, transparent 60%);
-      mix-blend-mode: screen; pointer-events: none;
-    }
-    .cover .art { width: 100%; height: 0; padding-bottom: 100%; background-size: cover; background-position: center; }
-    .meta { padding: 14px; display: grid; gap: 6px; }
-    .title { font-weight: 700; }
-    .artist { color: var(--muted); font-size: 14px; }
-    .open-btn {
-      margin-top: 6px; width: fit-content; padding: 10px 14px; border-radius: 12px; border: 0;
-      background: #f3f7ff; color: #17315a; box-shadow: inset 0 -2px 0 #ffffff; cursor: pointer; font-weight: 600;
-      touch-action: manipulation;
-    }
-    .open-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-
-    /* DRAWER */
-    .drawer {
-      position: fixed; inset: 0; display: grid; grid-template-rows: 1fr; place-items: end center;
-      background: rgba(0,0,0,.36); opacity: 0; pointer-events: none; transition: opacity var(--trans); z-index: 40;
-    }
-    .drawer[aria-hidden="false"] { opacity: 1; pointer-events: auto; }
-    .panel {
-      width: min(1024px, 100%); max-height: 88vh; background: #fff;
-      border-radius: 24px 24px 0 0; box-shadow: 0 -16px 50px rgba(0,0,0,.22);
-      overflow: hidden; display: grid; grid-template-columns: 1fr 1.2fr; position: relative;
-    }
-    @media (max-width: 900px) { .panel { grid-template-columns: 1fr; max-height: 90vh; } }
-    .panel .left {
-      padding: clamp(16px, 3vw, 24px);
-      display: grid; align-content: start; gap: 14px;
-      background: linear-gradient(140deg, #fff, #fff8f1 50%, #f2fffb);
-    }
-    .panel .art-lg {
-      width: 100%; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden;
-      box-shadow: var(--shadow); background-size: cover; background-position: center;
-    }
-    .panel .right { padding: clamp(16px, 3vw, 24px); display: grid; grid-template-rows: auto 1fr; gap: 12px; overflow: auto; }
-    .panel h2 { margin: 0; font-size: clamp(20px, 3vw, 28px); }
-    .panel .sub { color: var(--muted); }
-    .tracks { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-    .track {
-      display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
-      padding: 12px 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #0000000a;
-    }
-    .track .t-btn {
-      width: 40px; height: 40px; border-radius: 12px; border: 0; cursor: pointer;
-      background: #ffffff; box-shadow: var(--shadow); display: grid; place-items: center; touch-action: manipulation;
-    }
-    .track .t-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-    .track-title { font-weight: 600; }
-    .track-time { color: var(--muted); font-variant-numeric: tabular-nums; }
-
-    .panel .close {
-      position: absolute; right: 10px; top: 10px; z-index: 5;
-      width: 42px; height: 42px; border-radius: 12px; border: 0; cursor: pointer;
-      background: #ffffff; box-shadow: var(--shadow); touch-action: manipulation;
-    }
-    .panel .close:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-
-    /* PLAYER */
-    .player {
-      position: fixed; left: 0; right: 0; bottom: 0;
-      height: var(--player-h);
-      background: #fffffffb; backdrop-filter: blur(8px) saturate(120%);
-      border-top: 1px solid #00000012;
-      display: grid; grid-template-columns: 320px 1fr 340px; gap: 16px; align-items: center;
-      padding: 8px 12px calc(8px + var(--safe-bottom));
-      z-index: 30;
-    }
-    @media (max-width: 1024px) { .player { grid-template-columns: 1fr; height: auto; gap: 10px; padding: 10px 12px calc(12px + var(--safe-bottom)); } }
-    .p-left { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; min-width: 0; }
-    .p-thumb { width: 56px; height: 56px; border-radius: 12px; background-size: cover; background-position: center; box-shadow: var(--shadow); }
-    .p-meta { min-width: 0; }
-    .p-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .p-sub { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .p-center { display: grid; grid-template-rows: auto auto; gap: 6px; }
-    .controls { display: inline-grid; grid-auto-flow: column; gap: 8px; justify-content: center; align-items: center; }
-    .ctrl {
-      width: 44px; height: 44px; border-radius: 12px; border: 0; background: #f3f7ff; color: #17315a; cursor: pointer;
-      display: grid; place-items: center; box-shadow: inset 0 -2px 0 #ffffff, 0 2px 6px rgba(0,0,0,.06);
-      transition: transform var(--trans-fast); touch-action: manipulation;
-    }
-    .ctrl.primary { width: 52px; height: 52px; background: #17315a; color: #fff; }
-    .ctrl:active { transform: translateY(1px); }
-    .ctrl:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-
-    .bar { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
-    .time { color: var(--muted); font-size: 12px; text-align: center; }
-    .seek {
-      appearance: none; width: 100%; height: 10px; border-radius: 999px; background: #e6eefb; cursor: pointer;
-      touch-action: pan-y;
-    }
-    .seek::-webkit-slider-thumb {
-      appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--turquoise);
-      box-shadow: 0 0 0 6px #1fd1c926; border: 2px solid #fff;
-    }
-    .seek:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
-
-    .p-right { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
-    .volume-wrap { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
-    .vol { appearance: none; width: 100%; height: 8px; border-radius: 999px; background: #e6eefb; cursor: pointer; touch-action: pan-y; }
-    .vol::-webkit-slider-thumb {
-      appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--orange);
-      box-shadow: 0 0 0 6px #ffb34726; border: 2px solid #fff;
-    }
-
-    /* Visualizer */
-    .viz { width: 100%; height: 36px; border-radius: 10px; background: #f7fbff; overflow: hidden; box-shadow: inset 0 -1px 0 #ffffff, inset 0 1px 0 #00000006; }
-    canvas#vizCanvas { width: 100%; height: 100%; display: block; }
-
-    /* Generated gradient “covers” */
-    .grad--sunlit { background-image: radial-gradient(120% 90% at 10% 10%, #ffffffaa, transparent 50%), linear-gradient(135deg, var(--coral), var(--orange) 50%, var(--turquoise)); }
-    .grad--coral { background-image: radial-gradient(120% 90% at 90% 15%, #ffffff88, transparent 50%), linear-gradient(135deg, #ff9a8b, #ff6a88 45%, #ff99ac); }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Summery Vibes — Album Gallery</title>
+  <link rel="preload" href="styles.css" as="style" />
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="A bright, summery album gallery with an audio player and visualizer." />
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
-
-  <!-- iPad-only overlay -->
-  <div id="ipadOnly" class="blocker" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ipadTitle" aria-describedby="ipadDesc">
-    <div class="box">
-      <h2 id="ipadTitle">This experience is designed for iPad</h2>
-      <p id="ipadDesc">Open this page on an iPad to explore the summery album gallery and player.</p>
-      <p style="margin-top:12px;color:#0a1a1fb3;">Tip: On GitHub Pages, just visit the same URL from your iPad.</p>
-    </div>
-  </div>
-
-  <!-- Intro hero -->
-  <section class="hero" id="hero" aria-label="Intro">
-    <div class="hero-inner" role="dialog" aria-modal="true" aria-labelledby="hero-title" aria-describedby="hero-desc">
-      <h1 id="hero-title">Hey, I’m Jury</h1>
-      <p id="hero-desc">Welcome to my sun-soaked album gallery. Press Play and drift into warm currents, coral skies, and turquoise tides.</p>
-      <button class="play-cta" id="enterBtn" aria-label="Enter and reveal album gallery (P)">
-        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        <span>Play</span>
+  <!-- Intro / Hero -->
+  <header id="hero" class="hero" aria-labelledby="intro-title">
+    <div class="hero-inner">
+      <h1 id="intro-title" class="hero-title">Hey, I’m Jury</h1>
+      <p class="hero-tagline">
+        I collect sunshine-soaked sounds. Tap Play to drift into color, rhythm, and warm air.
+      </p>
+      <button id="enterBtn" class="btn btn-primary" aria-label="Enter and view gallery">
+        ▶ Play
       </button>
     </div>
-  </section>
 
-  <header class="site" role="banner">
-    <div class="wrap">
-      <div class="brand" aria-label="Summery Vibe">
-        <span class="brand-badge" aria-hidden="true"></span>
-        <span>Summery Vibe</span>
-      </div>
-      <div class="tagline">Bright, breezy, and a little bit salty</div>
-    </div>
+    <!-- animated gradient background handled by CSS -->
   </header>
 
-  <main id="main" role="main" tabindex="-1" aria-live="polite" aria-busy="true">
-    <h2 style="position:absolute;left:-9999px;top:-9999px;">Album gallery</h2>
-    <div class="grid" id="gallery" role="list"></div>
+  <!-- Main app -->
+  <main id="app" hidden>
+    <section class="toolbar" aria-label="Filters and view options">
+      <div class="toolbar-left">
+        <h2 class="visually-hidden">Album gallery</h2>
+        <span class="badge">Summery vibes</span>
+      </div>
+      <div class="toolbar-right">
+        <label class="visually-hidden" for="search">Search albums</label>
+        <input id="search" type="search" placeholder="Search title or artist" aria-label="Search albums" />
+      </div>
+    </section>
+
+    <section id="gallery" class="gallery" aria-label="Album gallery" role="list"></section>
+
+    <!-- Modal: album detail -->
+    <div id="albumModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc" hidden>
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-content" role="document">
+        <button class="modal-close" aria-label="Close details" data-close-modal>✕</button>
+        <div class="modal-header">
+          <img id="modalCover" class="modal-cover" src="" alt="" width="160" height="160" />
+          <div class="modal-meta">
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <p id="modalDesc" class="modal-subtitle"></p>
+            <div class="modal-actions">
+              <button id="playAlbumBtn" class="btn btn-primary" aria-label="Play album">Play album</button>
+            </div>
+          </div>
+        </div>
+        <ol id="trackList" class="tracklist" aria-label="Track list"></ol>
+      </div>
+    </div>
   </main>
 
-  <!-- Album details drawer -->
-  <div class="drawer" id="drawer" aria-hidden="true" aria-label="Album details overlay">
-    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="albumTitle">
-      <button class="close" id="closeDrawer" aria-label="Close album details (Esc)">
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.71 2.89 18.3 9.18 12 2.89 5.71 4.3 4.3l6.29 6.3 6.29-6.3z"/></svg>
-      </button>
-      <div class="left">
-        <div class="art-lg" id="detailCover" aria-hidden="true"></div>
-        <div>
-          <div class="p-title" id="albumTitle"></div>
-          <div class="sub" id="albumSub"></div>
-        </div>
-      </div>
-      <div class="right">
-        <div><strong>Tracks</strong></div>
-        <ul class="tracks" id="trackList"></ul>
-      </div>
-    </div>
-  </div>
-
   <!-- Player -->
-  <footer class="player" role="region" aria-label="Player">
-    <div class="p-left">
-      <div class="p-thumb" id="pThumb" aria-hidden="true"></div>
-      <div class="p-meta">
-        <div class="p-title" id="pTitle">—</div>
-        <div class="p-sub" id="pSub">—</div>
+  <footer id="player" class="player" role="region" aria-label="Audio player" hidden>
+    <div class="player-now">
+      <img id="playerCover" class="player-cover" src="" alt="" width="40" height="40" />
+      <div class="player-meta">
+        <div id="playerTitle" class="player-title">—</div>
+        <div id="playerSubtitle" class="player-subtitle">—</div>
       </div>
     </div>
 
-    <div class="p-center">
-      <div class="controls" role="group" aria-label="Playback controls">
-        <button class="ctrl" id="btnShuffle" aria-pressed="false" aria-label="Toggle shuffle (S)" title="Shuffle">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14.59 7.41 13.17 6l-9 9L6 16.83zM14 6h4V2l6 6-6 6v-4h-4zM0 6h6v2H0zm0 10h6v2H0z"/></svg>
-        </button>
-        <button class="ctrl" id="btnPrev" aria-label="Previous (Left)">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6L20 18V6z"/></svg>
-        </button>
-        <button class="ctrl primary" id="btnPlay" aria-label="Play/Pause (Space)">
-          <svg id="iconPlay" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          <svg id="iconPause" aria-hidden="true" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
-        </button>
-        <button class="ctrl" id="btnNext" aria-label="Next (Right)">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 18l10.5-6L4 6z"/></svg>
-        </button>
-        <button class="ctrl" id="btnRepeat" aria-pressed="false" aria-label="Toggle repeat (R)" title="Repeat">
-          <svg id="iconRepeatAll" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h7v3l4-4-4-4v3H6c-1.1 0-2 .9-2 2v4h2V7zm10 10H10v-3l-4 4 4 4v-3h8c1.1 0 2-.9 2-2v-4h-2v4z"/></svg>
-          <svg id="iconRepeatOne" aria-hidden="true" style="display:none" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h7v3l4-4-4-4v3H6c-1.1 0-2 .9-2 2v4h2V7zm10 10H10v-3l-4 4 4 4v-3h8c1.1 0 2-.9 2-2v-4h-2v4zM13 9h-2v6h2V9z"/></svg>
-        </button>
-      </div>
-
-      <div class="bar">
-        <div class="time" id="timeCur" aria-live="off">0:00</div>
-        <input class="seek" id="seek" type="range" min="0" max="100" step="1" value="0" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" />
-        <div class="time" id="timeDur" aria-live="polite">0:00</div>
-      </div>
+    <div class="player-controls" role="group" aria-label="Playback controls">
+      <button id="btnShuffle" class="icon-btn" aria-label="Shuffle off" aria-pressed="false" data-state="off">🔀</button>
+      <button id="btnPrev" class="icon-btn" aria-label="Previous track">⏮</button>
+      <button id="btnPlay" class="icon-btn lg" aria-label="Play">▶</button>
+      <button id="btnNext" class="icon-btn" aria-label="Next track">⏭</button>
+      <button id="btnRepeat" class="icon-btn" aria-label="Repeat off" data-mode="off">🔁</button>
     </div>
 
-    <div class="p-right">
-      <div class="viz" aria-hidden="true"><canvas id="vizCanvas"></canvas></div>
-      <div class="volume-wrap" role="group" aria-label="Volume">
-        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
-        <input class="vol" id="vol" type="range" min="0" max="1" step="0.01" value="0.9" role="slider" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.9" aria-label="Volume" />
-      </div>
+    <div class="player-progress">
+      <span id="currentTime" class="time" aria-live="off">0:00</span>
+      <input id="seekBar" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek through track" />
+      <span id="totalTime" class="time">0:00</span>
     </div>
 
-    <audio id="audio" crossorigin="anonymous"></audio>
+    <div class="player-volume" role="group" aria-label="Volume">
+      <span id="volIcon" class="vol-icon" aria-hidden="true">🔊</span>
+      <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
+    </div>
+
+    <div class="player-visualizer" aria-hidden="true">
+      <canvas id="viz" width="300" height="40"></canvas>
+      <div id="vizFallback" class="viz-fallback" hidden aria-hidden="true" title="Visualizer"></div>
+    </div>
+
+    <audio id="audio" preload="none" crossorigin="anonymous"></audio>
   </footer>
 
-  <!-- Embedded albums.json data (inlined for single-file project) -->
-  <script type="application/json" id="albums-data">
-  {
-    "albums": [
-      {
-        "id": "sunlit-tides",
-        "title": "Sunlit Tides",
-        "artist": "Coral Bloom",
-        "year": 2025,
-        "cover": "gradient:summer",
-        "tags": ["summer", "chillwave", "sunset"],
-        "tracks": [
-          { "id": "sunlit-1", "title": "Golden Hour",    "duration": "2:00", "audio": "tone:440:20" },
-          { "id": "sunlit-2", "title": "Seafoam Drive",  "duration": "2:00", "audio": "tone:330:20" },
-          { "id": "sunlit-3", "title": "Palm Shadows",   "duration": "2:00", "audio": "tone:392:20" },
-          { "id": "sunlit-4", "title": "Tangerine Skies","duration": "2:00", "audio": "tone:262:20" }
-        ]
-      },
-      {
-        "id": "coral-skies",
-        "title": "Coral Skies",
-        "artist": "Azure Drift",
-        "year": 2024,
-        "cover": "gradient:coral",
-        "tags": ["dream pop", "breezy", "coastline"],
-        "tracks": [
-          { "id": "coral-1", "title": "Warm Currents", "duration": "2:00", "audio": "tone:285:20" },
-          { "id": "coral-2", "title": "Citrus Mirage", "duration": "2:00", "audio": "tone:512:20" },
-          { "id": "coral-3", "title": "Lagoon Echoes", "duration": "2:00", "audio": "tone:360:20" }
-        ]
-      }
-    ]
-  }
-  </script>
-
-  <script>
-    // iPad detection (covers iPadOS 13+ where UA can look like macOS)
-    const isIPad = (() => {
-      const ua = navigator.userAgent || "";
-      const plat = navigator.platform || "";
-      const touch = navigator.maxTouchPoints || 0;
-      return /iPad/.test(ua) || /iPad/.test(plat) || (ua.includes("Macintosh") && touch > 1) || (plat === "MacIntel" && touch > 1);
-    })();
-
-    const blocker = document.getElementById('ipadOnly');
-
-    if (!isIPad) {
-      // Show overlay and stop initialization
-      blocker.setAttribute('aria-hidden', 'false');
-      // Remove hero interactions for non-iPad to avoid confusion
-      document.getElementById('hero').style.display = 'none';
-    } else {
-      blocker.setAttribute('aria-hidden', 'true');
-
-      // Utility: format seconds -> M:SS
-      const fmt = s => {
-        if (!isFinite(s) || s < 0) s = 0;
-        const m = Math.floor(s / 60);
-        const sec = Math.floor(s % 60).toString().padStart(2, '0');
-        return `${m}:${sec}`;
-      };
-
-      const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      // Parse embedded JSON
-      const albumsJSON = document.getElementById('albums-data').textContent;
-      const DATA = JSON.parse(albumsJSON);
-      const albums = DATA.albums;
-
-      // DOM refs
-      const hero = document.getElementById('hero');
-      const enterBtn = document.getElementById('enterBtn');
-      const gallery = document.getElementById('gallery');
-      const mainEl = document.getElementById('main');
-
-      const drawer = document.getElementById('drawer');
-      const closeDrawerBtn = document.getElementById('closeDrawer');
-      const detailCover = document.getElementById('detailCover');
-      const albumTitleEl = document.getElementById('albumTitle');
-      const albumSubEl = document.getElementById('albumSub');
-      const trackListEl = document.getElementById('trackList');
-
-      const pThumb = document.getElementById('pThumb');
-      const pTitle = document.getElementById('pTitle');
-      const pSub = document.getElementById('pSub');
-      const btnShuffle = document.getElementById('btnShuffle');
-      const btnPrev = document.getElementById('btnPrev');
-      const btnPlay = document.getElementById('btnPlay');
-      const btnNext = document.getElementById('btnNext');
-      const btnRepeat = document.getElementById('btnRepeat');
-      const iconPlay = document.getElementById('iconPlay');
-      const iconPause = document.getElementById('iconPause');
-      const iconRepeatAll = document.getElementById('iconRepeatAll');
-      const iconRepeatOne = document.getElementById('iconRepeatOne');
-      const seek = document.getElementById('seek');
-      const timeCur = document.getElementById('timeCur');
-      const timeDur = document.getElementById('timeDur');
-      const vol = document.getElementById('vol');
-      const audio = document.getElementById('audio');
-      const vizCanvas = document.getElementById('vizCanvas');
-      const ctx2d = vizCanvas.getContext('2d');
-
-      // Web Audio (init on user gesture for iPad)
-      let audioCtx, analyser, sourceNode, rafId = 0;
-
-      function initAudioGraph() {
-        if (audioCtx) return;
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioCtx();
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 512;
-        sourceNode = audioCtx.createMediaElementSource(audio);
-        sourceNode.connect(analyser);
-        analyser.connect(audioCtx.destination);
-      }
-
-      // State
-      let currentAlbumIdx = 0;
-      let currentTrackIdx = 0;
-      let shuffled = false;
-      let repeatMode = 'off'; // 'off' | 'all' | 'one'
-      let order = [];
-      let drawerOpen = false;
-
-      // Canvas sizing
-      const resizeViz = () => {
-        const dpr = Math.max(1, window.devicePixelRatio || 1);
-        const rect = vizCanvas.getBoundingClientRect();
-        vizCanvas.width = Math.floor(rect.width * dpr);
-        vizCanvas.height = Math.floor(rect.height * dpr);
-        ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-      };
-      window.addEventListener('resize', resizeViz, { passive: true });
-
-      // Visualizer
-      const vizData = new Uint8Array(256);
-      function renderViz() {
-        if (!analyser || prefersReducedMotion) return;
-        analyser.getByteFrequencyData(vizData);
-        const { width, height } = vizCanvas.getBoundingClientRect();
-        ctx2d.clearRect(0, 0, width, height);
-        const bars = 40;
-        const step = Math.floor(vizData.length / bars);
-        const w = width / bars;
-        for (let i = 0; i < bars; i++) {
-          const v = vizData[i * step] / 255;
-          const h = v * height;
-          const x = i * w + 2;
-          const y = height - h;
-          const hue = 180 + i * 2;
-          ctx2d.fillStyle = `hsl(${hue}, 85%, ${40 + v * 25}%)`;
-          const rw = Math.max(4, w - 4);
-          const radius = 6;
-          ctx2d.beginPath();
-          ctx2d.moveTo(x, y + radius);
-          ctx2d.arcTo(x, y, x + radius, y, radius);
-          ctx2d.lineTo(x + rw - radius, y);
-          ctx2d.arcTo(x + rw, y, x + rw, y + radius, radius);
-          ctx2d.lineTo(x + rw, height);
-          ctx2d.lineTo(x, height);
-          ctx2d.closePath();
-          ctx2d.fill();
-        }
-        rafId = requestAnimationFrame(renderViz);
-      }
-
-      // Tone generator -> WAV Blob URL
-      function toneToWavURL(freq = 440, duration = 10, sampleRate = 44100) {
-        const samples = Math.floor(duration * sampleRate);
-        const buffer = new ArrayBuffer(44 + samples * 2);
-        const view = new DataView(buffer);
-        const writeStr = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
-        const set16 = (o, v) => view.setUint16(o, v, true);
-        const set32 = (o, v) => view.setUint32(o, v, true);
-
-        writeStr(0, 'RIFF'); set32(4, 36 + samples * 2);
-        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); set32(16, 16);
-        set16(20, 1); set16(22, 1); set32(24, sampleRate);
-        set32(28, sampleRate * 2); set16(32, 2); set16(34, 16);
-        writeStr(36, 'data'); set32(40, samples * 2);
-
-        for (let i = 0; i < samples; i++) {
-          const t = i / samples;
-          const env = Math.min(1, t * 30) * Math.min(1, (1 - t) * 30);
-          const s = Math.sin(2 * Math.PI * freq * (i / sampleRate)) * 0.5 * env;
-          view.setInt16(44 + i * 2, s * 0x7FFF, true);
-        }
-        return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
-      }
-
-      // Gallery
-      function gradientClass(cover) { return cover === 'gradient:coral' ? 'grad--coral' : 'grad--sunlit'; }
-      function renderGallery() {
-        gallery.innerHTML = '';
-        albums.forEach((alb, idx) => {
-          const card = document.createElement('article');
-          card.className = 'card';
-          card.setAttribute('role', 'listitem');
-
-          const cover = document.createElement('div');
-          cover.className = 'cover';
-          const art = document.createElement('div');
-          art.className = `art ${gradientClass(alb.cover)}`;
-          art.setAttribute('aria-hidden', 'true');
-          cover.appendChild(art);
-
-          const meta = document.createElement('div');
-          meta.className = 'meta';
-          const title = document.createElement('div');
-          title.className = 'title';
-          title.textContent = alb.title;
-          const artist = document.createElement('div');
-          artist.className = 'artist';
-          artist.textContent = `${alb.artist} • ${alb.year}`;
-
-          const open = document.createElement('button');
-          open.className = 'open-btn';
-          open.type = 'button';
-          open.textContent = 'Open';
-          open.setAttribute('aria-label', `Open ${alb.title} by ${alb.artist}`);
-          open.addEventListener('click', () => openAlbum(idx));
-
-          meta.appendChild(title);
-          meta.appendChild(artist);
-          meta.appendChild(open);
-
-          card.appendChild(cover);
-          card.appendChild(meta);
-          gallery.appendChild(card);
-        });
-        mainEl.setAttribute('aria-busy', 'false');
-      }
-
-      // Drawer
-      function openAlbum(idx) {
-        drawerOpen = true;
-        currentAlbumIdx = idx;
-        const alb = albums[idx];
-        albumTitleEl.textContent = alb.title;
-        albumSubEl.textContent = `${alb.artist} • ${alb.year}`;
-        detailCover.className = `art-lg ${gradientClass(alb.cover)}`;
-
-        trackListEl.innerHTML = '';
-        alb.tracks.forEach((t, i) => {
-          const li = document.createElement('li');
-          li.className = 'track';
-
-          const play = document.createElement('button');
-          play.className = 't-btn';
-          play.type = 'button';
-          play.setAttribute('aria-label', `Play ${t.title}`);
-          play.innerHTML = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-          play.addEventListener('click', () => { playAlbumTrack(idx, i); });
-
-          const label = document.createElement('div');
-          label.className = 'track-title';
-          label.textContent = t.title;
-
-          const time = document.createElement('div');
-          time.className = 'track-time';
-          time.textContent = t.duration || '';
-
-          li.appendChild(play);
-          li.appendChild(label);
-          li.appendChild(time);
-          trackListEl.appendChild(li);
-        });
-
-        drawer.setAttribute('aria-hidden', 'false');
-        closeDrawerBtn.focus();
-        document.body.style.overflow = 'hidden';
-      }
-      function closeAlbum() {
-        drawerOpen = false;
-        drawer.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-      }
-      document.getElementById('closeDrawer').addEventListener('click', closeAlbum);
-      drawer.addEventListener('click', (e) => { if (e.target === drawer) closeAlbum(); });
-
-      // Enter
-      function enterSite() {
-        initAudioGraph();
-        if (!prefersReducedMotion) {
-          hero.classList.add('hidden');
-          setTimeout(() => hero.remove(), 260);
-        } else {
-          hero.remove();
-        }
-        resizeViz();
-        audioCtx && audioCtx.resume();
-        mainEl.focus();
-      }
-      document.getElementById('enterBtn').addEventListener('click', enterSite);
-      document.addEventListener('keydown', (e) => {
-        if (hero && (e.key === 'p' || e.key === 'P')) enterSite();
-      });
-
-      // Player logic
-      function buildOrder() {
-        const n = albums[currentAlbumIdx].tracks.length;
-        order = Array.from({ length: n }, (_, i) => i);
-        if (shuffled) {
-          for (let i = n - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [order[i], order[j]] = [order[j], order[i]];
-          }
-        }
-      }
-
-      function resolveAudioSrc(track) {
-        if (typeof track.audio === 'string' && track.audio.startsWith('tone:')) {
-          const [, f, d] = track.audio.split(':');
-          return toneToWavURL(parseFloat(f) || 440, parseFloat(d) || 10);
-        }
-        return track.audio;
-        }
-
-      function loadCurrentTrack({ autoplay = true } = {}) {
-        const alb = albums[currentAlbumIdx];
-        const trk = alb.tracks[currentTrackIdx];
-        const src = resolveAudioSrc(trk);
-        audio.src = src;
-        audio.load();
-
-        pTitle.textContent = trk.title;
-        pSub.textContent = `${alb.artist} — ${alb.title}`;
-        pThumb.className = `p-thumb ${gradientClass(alb.cover)}`;
-
-        timeCur.textContent = '0:00';
-        timeDur.textContent = trk.duration || '0:00';
-        seek.value = 0;
-        seek.setAttribute('aria-valuenow', '0');
-
-        if (autoplay) {
-          audio.play().then(() => {
-            iconPlay.style.display = 'none';
-            iconPause.style.display = '';
-            if (!prefersReducedMotion && !rafId) rafId = requestAnimationFrame(renderViz);
-          }).catch(() => {
-            iconPlay.style.display = '';
-            iconPause.style.display = 'none';
-          });
-        }
-      }
-
-      function playAlbumTrack(albumIdx, trackIdx) {
-        currentAlbumIdx = albumIdx;
-        currentTrackIdx = trackIdx;
-        buildOrder();
-        loadCurrentTrack({ autoplay: true });
-      }
-
-      function nextTrack(manual = false) {
-        if (repeatMode === 'one' && !manual) {
-          audio.currentTime = 0; audio.play(); return;
-        }
-        const pos = order.indexOf(currentTrackIdx);
-        let nextPos = pos + 1;
-        if (nextPos >= order.length) {
-          if (repeatMode === 'all') {
-            buildOrder();
-            currentTrackIdx = order[0];
-          } else {
-            audio.pause(); audio.currentTime = 0; return;
-          }
-        } else {
-          currentTrackIdx = order[nextPos];
-        }
-        loadCurrentTrack({ autoplay: true });
-      }
-      function prevTrack() {
-        const pos = order.indexOf(currentTrackIdx);
-        let prevPos = pos - 1;
-        if (prevPos < 0) {
-          if (repeatMode === 'all') {
-            currentTrackIdx = order[order.length - 1];
-            loadCurrentTrack({ autoplay: true });
-          } else {
-            audio.currentTime = 0;
-          }
-        } else {
-          currentTrackIdx = order[prevPos];
-          loadCurrentTrack({ autoplay: true });
-        }
-      }
-
-      // Audio events
-      audio.addEventListener('loadedmetadata', () => { timeDur.textContent = fmt(audio.duration); });
-      audio.addEventListener('timeupdate', () => {
-        const cur = audio.currentTime || 0;
-        const dur = audio.duration || 0;
-        timeCur.textContent = fmt(cur);
-        if (isFinite(dur) && dur > 0) {
-          timeDur.textContent = fmt(dur);
-          const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
-          seek.value = pct;
-          seek.setAttribute('aria-valuenow', String(Math.round(pct)));
-        }
-      });
-      audio.addEventListener('play', () => {
-        iconPlay.style.display = 'none'; iconPause.style.display = '';
-        if (!prefersReducedMotion && !rafId) rafId = requestAnimationFrame(renderViz);
-      });
-      audio.addEventListener('pause', () => {
-        iconPlay.style.display = ''; iconPause.style.display = 'none';
-        if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
-      });
-      audio.addEventListener('ended', () => { nextTrack(false); });
-
-      // Controls
-      btnPlay.addEventListener('click', () => { audio.paused ? audio.play() : audio.pause(); });
-      btnNext.addEventListener('click', () => nextTrack(true));
-      btnPrev.addEventListener('click', prevTrack);
-      btnShuffle.addEventListener('click', () => { shuffled = !shuffled; btnShuffle.setAttribute('aria-pressed', String(shuffled)); buildOrder(); });
-      btnRepeat.addEventListener('click', () => {
-        repeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
-        btnRepeat.setAttribute('aria-pressed', repeatMode !== 'off');
-        iconRepeatAll.style.display = repeatMode === 'one' ? 'none' : '';
-        iconRepeatOne.style.display = repeatMode === 'one' ? '' : 'none';
-        btnRepeat.title = repeatMode === 'off' ? 'Repeat off' : (repeatMode === 'one' ? 'Repeat one' : 'Repeat all');
-      });
-
-      seek.addEventListener('input', () => {
-        const dur = audio.duration || 0;
-        if (isFinite(dur) && dur > 0) {
-          const t = (seek.value / 100) * dur;
-          audio.currentTime = t;
-          timeCur.textContent = fmt(t);
-        }
-      });
-
-      vol.addEventListener('input', () => {
-        audio.volume = parseFloat(vol.value);
-        vol.setAttribute('aria-valuenow', vol.value);
-      });
-      audio.volume = parseFloat(vol.value);
-
-      // Keyboard shortcuts (optional on iPad with keyboards)
-      document.addEventListener('keydown', (e) => {
-        if (drawerOpen && e.key === 'Escape') { closeAlbum();
+  <script src="app.js" defer></script>
+</body>
+</html>
